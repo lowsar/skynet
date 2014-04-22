@@ -1,26 +1,29 @@
 local skynet = require "skynet"
 
-local command = {}
+local i = 0
+local hello = "hello"
 
-function command.PING(hello)
-	skynet.ret(skynet.pack(hello))
-end
-
-function command.HELLO()
+function response.ping(hello)
 	skynet.sleep(100)
-	skynet.ret(skynet.pack("hello"))
+	return hello
 end
 
-function command.EXIT()
-	skynet.exit()
+function accept.hello()
+	i = i + 1
+	print (i, hello)
 end
 
-function command.ERROR()
+function response.error()
 	error "throw an error"
 end
 
-skynet.start(function()
-	skynet.dispatch("lua", function(session,addr, cmd, ...)
-		command[cmd](...)
-	end)
-end)
+function init( ... )
+	print ("ping server start:", ...)
+
+-- You can return "queue" for queue service mode
+--	return "queue"
+end
+
+function exit(...)
+	print ("ping server exit:", ...)
+end
