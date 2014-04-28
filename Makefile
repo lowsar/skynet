@@ -22,7 +22,10 @@ JEMALLOC_STATICLIB := 3rd/jemalloc/lib/libjemalloc_pic.a
 JEMALLOC_INC := 3rd/jemalloc/include/jemalloc
 
 all : jemalloc
+	
 .PHONY : jemalloc
+
+MALLOC_STATICLIB := $(JEMALLOC_STATICLIB)
 
 $(JEMALLOC_STATICLIB) : 3rd/jemalloc/Makefile
 	cd 3rd/jemalloc && $(MAKE) CC=$(CC) 
@@ -33,12 +36,12 @@ $(JEMALLOC_STATICLIB) : 3rd/jemalloc/Makefile
 3rd/jemalloc/Makefile : | 3rd/jemalloc/autogen.sh
 	cd 3rd/jemalloc && ./autogen.sh --with-jemalloc-prefix=je_ --disable-valgrind
 
-jemalloc : $(JEMALLOC_STATICLIB)
+jemalloc : $(MALLOC_STATICLIB)
 
 # skynet
 
 CSERVICE = snlua logger gate master harbor
-LUA_CLIB = skynet socketdriver int64 bson mongo md5 netpack cjson clientsocket memory
+LUA_CLIB = skynet socketdriver int64 bson mongo md5 netpack cjson clientsocket memory profile
 
 SKYNET_SRC = skynet_main.c skynet_handle.c skynet_module.c skynet_mq.c \
   skynet_server.c skynet_start.c skynet_timer.c skynet_error.c \
@@ -50,8 +53,8 @@ all : \
   $(foreach v, $(CSERVICE), $(CSERVICE_PATH)/$(v).so) \
   $(foreach v, $(LUA_CLIB), $(LUA_CLIB_PATH)/$(v).so) 
 
-$(SKYNET_BUILD_PATH)/skynet : $(foreach v, $(SKYNET_SRC), skynet-src/$(v)) $(LUA_LIB) $(JEMALLOC_STATICLIB)
-	$(CC) $(CFLAGS) -o $@ $^ -Iskynet-src -I$(JEMALLOC_INC) $(LDFLAGS) $(EXPORT) $(LIBS)
+$(SKYNET_BUILD_PATH)/skynet : $(foreach v, $(SKYNET_SRC), skynet-src/$(v)) $(LUA_LIB) $(MALLOC_STATICLIB)
+	$(CC) $(CFLAGS) -o $@ $^ -Iskynet-src -I$(JEMALLOC_INC) $(LDFLAGS) $(EXPORT) $(SKYNET_LIBS) $(SKYNET_DEFINES)
 
 $(LUA_CLIB_PATH) :
 	mkdir $(LUA_CLIB_PATH)
@@ -95,6 +98,9 @@ $(LUA_CLIB_PATH)/clientsocket.so : lualib-src/lua-clientsocket.c | $(LUA_CLIB_PA
 
 $(LUA_CLIB_PATH)/memory.so : lualib-src/lua-memory.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) -Iskynet-src $^ -o $@ 
+
+$(LUA_CLIB_PATH)/profile.so : lualib-src/lua-profile.c | $(LUA_CLIB_PATH)
+	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ 
 
 clean :
 	rm -f $(SKYNET_BUILD_PATH)/skynet $(CSERVICE_PATH)/*.so $(LUA_CLIB_PATH)/*.so

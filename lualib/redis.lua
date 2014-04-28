@@ -9,9 +9,7 @@ local redis = {}
 local command = {}
 local meta = {
 	__index = command,
-	__gc = function(self)
-		self[1]:close()
-	end,
+	-- DO NOT close channel in __gc
 }
 
 ---------- redis response
@@ -86,8 +84,8 @@ function redis.connect(db_conf)
 		port = db_conf.port or 6379,
 		auth = redis_login(db_conf.auth, db_conf.db),
 	}
-	-- try connect first
-	channel:connect()
+	-- try connect first only once
+	channel:connect(true)
 	return setmetatable( { channel }, meta )
 end
 
@@ -178,8 +176,8 @@ function redis.watch(db_conf)
 	}
 	obj.__sock = channel
 
-	-- try connect first
-	channel:connect()
+	-- try connect first only once
+	channel:connect(true)
 	return setmetatable( obj, watchmeta )
 end
 

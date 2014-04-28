@@ -39,9 +39,7 @@ local client_meta = {
 
 		return "[mongo client : " .. self.host .. port_string .."]"
 	end,
-	__gc = function(self)
-		self:disconnect()
-	end
+	-- DO NOT need disconnect, because channel will shutdown during gc
 }
 
 local mongo_db = {}
@@ -103,7 +101,7 @@ function mongo.client( conf )
 		auth = mongo_auth(conf),
 	}
 	setmetatable(obj, client_meta)
-	obj.__sock:connect()
+	obj.__sock:connect(true)	-- try connect only once
 	return obj
 end
 
